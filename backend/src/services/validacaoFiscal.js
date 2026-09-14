@@ -109,41 +109,53 @@ async function validarRegistro(pool, registro) {
       validacao.status === "inconsistente"
   );
 
-  let ocorrencia = null;
+  const ocorrencias = [];
 
-  if (
-    validacoes.some(
-      (validacao) =>
-        validacao.regra === "Chave de acesso" &&
-        validacao.status === "inconsistente"
-    )
-  ) {
-    ocorrencia = "Campo obrigatório ausente";
-  } else if (
-    validacoes.some(
-      (validacao) =>
-        validacao.regra === "Data dentro do período" &&
-        validacao.status === "inconsistente"
-    )
-  ) {
-    ocorrencia = "Data fora do período";
-  } else if (
-    validacoes.some(
-      (validacao) =>
-        validacao.regra === "Documento único" &&
-        validacao.status === "inconsistente"
-    )
-  ) {
-    ocorrencia = "Documento duplicado";
-  } else if (
-    validacoes.some(
-      (validacao) =>
-        validacao.regra === "Total dos itens" &&
-        validacao.status === "inconsistente"
-    )
-  ) {
-    ocorrencia = "Total inconsistente";
-  }
+if (
+  validacoes.some(
+    (validacao) =>
+      validacao.regra === "Chave de acesso" &&
+      validacao.status === "inconsistente"
+  )
+) {
+  ocorrencias.push("Campo obrigatório ausente");
+}
+
+if (
+  validacoes.some(
+    (validacao) =>
+      validacao.regra === "Data dentro do período" &&
+      validacao.status === "inconsistente"
+  )
+) {
+  ocorrencias.push("Data fora do período");
+}
+
+if (
+  validacoes.some(
+    (validacao) =>
+      validacao.regra === "Documento único" &&
+      validacao.status === "inconsistente"
+  )
+) {
+  ocorrencias.push("Documento duplicado");
+}
+
+if (
+  validacoes.some(
+    (validacao) =>
+      validacao.regra === "Total dos itens" &&
+      validacao.status === "inconsistente"
+  )
+) {
+  ocorrencias.push("Total inconsistente");
+}
+
+const ocorrencia =
+  ocorrencias.length > 0
+    ? ocorrencias.join(" + ")
+    : null;
+
 
   console.log("Validações:", validacoes);
   console.log("Quantidade:", quantidadeInconsistencias);
