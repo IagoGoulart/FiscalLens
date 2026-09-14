@@ -37,6 +37,26 @@ app.get("/api/health/database", async (req, res) => {
   }
 });
 
+app.get("/api/health/database-info", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        current_database(),
+        current_user,
+        inet_server_addr()
+    `);
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      status: "error",
+      message: "Erro ao consultar informações do banco",
+    });
+  }
+});
+
 // Lista todos os registros fiscais
 app.get("/api/registros", async (req, res) => {
   try {
