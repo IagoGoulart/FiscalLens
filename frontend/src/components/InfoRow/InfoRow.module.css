@@ -1,0 +1,21 @@
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:last-child { border-bottom: none; }
+
+.label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-align: right;
+}

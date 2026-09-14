@@ -1,0 +1,18 @@
+.wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.title {
+  font-size: var(--fs-lg);
+  color: var(--color-text-primary);
+}
+
+.desc {
+  margin-top: 2px;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
