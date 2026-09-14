@@ -1,5 +1,8 @@
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+
 export async function buscarRegistros() {
-  const response = await fetch("http://localhost:3000/api/registros");
+  const response = await fetch(`${API_URL}/api/registros`);
   if (!response.ok) {
     throw new Error("Erro ao buscar registros fiscais");
   }
@@ -17,7 +20,7 @@ export async function buscarRegistros() {
   }));
 }
 export async function buscarRegistroPorId(id) {
-  const response = await fetch(`http://localhost:3000/api/registros/${id}`);
+  const response = await fetch(`${API_URL}/api/registros/${id}`);
   if (!response.ok) {
     throw new Error("Erro ao buscar registro fiscal");
   }
@@ -36,9 +39,7 @@ export async function buscarRegistroPorId(id) {
 }
 
 export async function buscarValidacoesPorRegistro(id) {
-  const response = await fetch(
-    `http://localhost:3000/api/registros/${id}/validacao`
-  );
+  const response = await fetch(`${API_URL}/api/registros/${id}/validacao`);
 
   if (!response.ok) {
     throw new Error("Erro ao buscar validações do registro");
