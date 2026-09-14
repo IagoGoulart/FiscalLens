@@ -21,12 +21,17 @@ app.get("/api/health", (req, res) => {
 // Rota de teste da conexão com o PostgreSQL
 app.get("/api/health/database", async (req, res) => {
   try {
-    await pool.query("SELECT NOW()");
+    const result = await pool.query(`
+      SELECT
+        current_database(),
+        current_user,
+        COUNT(*) AS quantidade,
+        COUNT(chave_acesso) AS chaves_preenchidas
+      FROM registros_fiscais
+    `);
 
-    res.json({
-      status: "ok",
-      message: "PostgreSQL conectado com sucesso",
-    });
+    res.json(result.rows[0]);
+
   } catch (error) {
     console.error(error);
 
