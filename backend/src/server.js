@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
+
 // Rota de teste da API
 app.get("/api/health", (req, res) => {
   res.json({
