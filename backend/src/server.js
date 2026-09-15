@@ -1,9 +1,11 @@
 require("dotenv").config();
 
+
 const cors = require("cors");
 const express = require("express");
 const pool = require("./config/database");
 const { validarRegistro } = require("./services/validacaoFiscal");
+const { gerarExplicacaoIA } = require("./services/explicacaoIA");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -199,6 +201,61 @@ app.get("/api/registros/:id/validacao", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Erro ao validar registro fiscal",
+    });
+  }
+});
+// Gera uma explicação em linguagem natural para as inconsistências identificadas pelas regras do sistema
+app.post("/api/registros/:id/explicacao-ia", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `
+        SELECT
+          registros_fiscais.id,
+          registros_fiscais.numero_documento,
+          empresas.razao_social,
+          empresas.segmento,
+          registros_fiscais.data_emissao,
+          registros_fiscais.valor_total,
+          registros_fiscais.chave_acesso
+        FROM registros_fiscais
+        JOIN empresas
+          ON registros_fiscais.empresa_id = empresas.id
+        WHERE registros_fiscais.id = $1;
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Registro fiscal não encontrado",
+      });
+    }
+
+    const registro = result.rows[0];
+
+    const resultadoValidacao = await validarRegistro(
+      pool,
+      registro
+    );
+
+    const explicacao = await gerarExplicacaoIA(
+      registro,
+      resultadoValidacao
+    );
+
+    res.json({
+      explicacao,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      status: "error",
+      message: "Erro ao gerar explicação com IA",
     });
   }
 });

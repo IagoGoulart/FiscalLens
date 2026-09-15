@@ -37,7 +37,10 @@ async function validarTotalItens(pool, registro) {
   const totalItens = Number(itemTotal.rows[0].total_itens);
   const quantidadeItens = Number(itemTotal.rows[0].quantidade_item);
 
-  return { totalItens, quantidadeItens };
+  return {
+    totalItens,
+    quantidadeItens,
+  };
 }
 
 async function validarRegistro(pool, registro) {
@@ -83,20 +86,34 @@ async function validarRegistro(pool, registro) {
 
   const resultadoItens = await validarTotalItens(pool, registro);
 
+  const valorRegistro = Number(registro.valor_total);
+  const totalItens = resultadoItens.totalItens;
+  const quantidadeItens = resultadoItens.quantidadeItens;
+
+  const totalItensValido =
+    quantidadeItens > 0 &&
+    totalItens === valorRegistro;
+
   validacoes.push({
     regra: "Total dos itens",
-    status:
-      resultadoItens.quantidadeItens === 0 ||
-      resultadoItens.totalItens !== Number(registro.valor_total)
-        ? "inconsistente"
-        : "aprovado",
+    status: totalItensValido ? "aprovado" : "inconsistente",
 
     mensagem:
-      resultadoItens.quantidadeItens === 0
+      quantidadeItens === 0
         ? "Não foram encontrados itens para este registro."
-        : resultadoItens.totalItens !== Number(registro.valor_total)
-        ? "A soma dos valores dos itens não corresponde ao valor total do registro."
+        : totalItens !== valorRegistro
+        ? `A soma dos valores dos itens é de R$ ${totalItens.toFixed(
+            2
+          )}, enquanto o valor total do registro é de R$ ${valorRegistro.toFixed(
+            2
+          )}.`
         : "A soma dos valores dos itens corresponde ao valor total do registro.",
+
+    detalhes: {
+      totalItens,
+      quantidadeItens,
+      valorRegistro,
+    },
   });
 
   const quantidadeInconsistencias = validacoes.filter(
@@ -111,51 +128,50 @@ async function validarRegistro(pool, registro) {
 
   const ocorrencias = [];
 
-if (
-  validacoes.some(
-    (validacao) =>
-      validacao.regra === "Chave de acesso" &&
-      validacao.status === "inconsistente"
-  )
-) {
-  ocorrencias.push("Campo obrigatório ausente");
-}
+  if (
+    validacoes.some(
+      (validacao) =>
+        validacao.regra === "Chave de acesso" &&
+        validacao.status === "inconsistente"
+    )
+  ) {
+    ocorrencias.push("Campo obrigatório ausente");
+  }
 
-if (
-  validacoes.some(
-    (validacao) =>
-      validacao.regra === "Data dentro do período" &&
-      validacao.status === "inconsistente"
-  )
-) {
-  ocorrencias.push("Data fora do período");
-}
+  if (
+    validacoes.some(
+      (validacao) =>
+        validacao.regra === "Data dentro do período" &&
+        validacao.status === "inconsistente"
+    )
+  ) {
+    ocorrencias.push("Data fora do período");
+  }
 
-if (
-  validacoes.some(
-    (validacao) =>
-      validacao.regra === "Documento único" &&
-      validacao.status === "inconsistente"
-  )
-) {
-  ocorrencias.push("Documento duplicado");
-}
+  if (
+    validacoes.some(
+      (validacao) =>
+        validacao.regra === "Documento único" &&
+        validacao.status === "inconsistente"
+    )
+  ) {
+    ocorrencias.push("Documento duplicado");
+  }
 
-if (
-  validacoes.some(
-    (validacao) =>
-      validacao.regra === "Total dos itens" &&
-      validacao.status === "inconsistente"
-  )
-) {
-  ocorrencias.push("Total inconsistente");
-}
+  if (
+    validacoes.some(
+      (validacao) =>
+        validacao.regra === "Total dos itens" &&
+        validacao.status === "inconsistente"
+    )
+  ) {
+    ocorrencias.push("Total inconsistente");
+  }
 
-const ocorrencia =
-  ocorrencias.length > 0
-    ? ocorrencias.join(" + ")
-    : null;
-
+  const ocorrencia =
+    ocorrencias.length > 0
+      ? ocorrencias.join(" + ")
+      : null;
 
   console.log("Validações:", validacoes);
   console.log("Quantidade:", quantidadeInconsistencias);
@@ -181,4 +197,3 @@ const ocorrencia =
 module.exports = {
   validarRegistro,
 };
-
