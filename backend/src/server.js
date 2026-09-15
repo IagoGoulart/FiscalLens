@@ -10,6 +10,17 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
+app.get("/api/health/encoding2", (req, res) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+
+  res.end(JSON.stringify({
+    teste: "Comércio",
+    teste2: "Logística",
+    teste3: "Indústria",
+    teste4: "Serviços",
+    teste5: "Tributário"
+  }));
+});
 
 // Rota de teste da API
 app.get("/api/health", (req, res) => {
