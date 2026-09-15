@@ -44,6 +44,7 @@ export default function AnaliseRegistro() {
   const [registro, setRegistro] = useState(null);
   const [validacoes, setValidacoes] = useState([]);
   const [explicacaoIA, setExplicacaoIA] = useState("");
+  const [recomendacaoIA, setRecomendacaoIA] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingIA, setLoadingIA] = useState(false);
   const [error, setError] = useState(null);
@@ -68,11 +69,16 @@ export default function AnaliseRegistro() {
             const resultadoIA = await buscarExplicacaoIA(id);
 
             setExplicacaoIA(resultadoIA.explicacao);
+            setRecomendacaoIA(resultadoIA.recomendacao);
           } catch (err) {
             console.error("Erro ao gerar explicação com IA:", err);
 
             setExplicacaoIA(
               "Não foi possível gerar a explicação com IA neste momento. A análise das inconsistências identificadas pelo sistema permanece disponível."
+            );
+
+            setRecomendacaoIA(
+              "Verificar as inconsistências identificadas pelo sistema e realizar a análise profissional dos dados antes da validação final."
             );
           } finally {
             setLoadingIA(false);
@@ -80,6 +86,10 @@ export default function AnaliseRegistro() {
         } else {
           setExplicacaoIA(
             "Nenhuma inconsistência foi identificada pelas regras deste protótipo. A análise profissional permanece necessária para a validação final."
+          );
+
+          setRecomendacaoIA(
+            "Manter o registro disponível para análise profissional e confirmar as informações antes da validação final."
           );
         }
       } catch (err) {
@@ -151,7 +161,7 @@ export default function AnaliseRegistro() {
     );
   }
 
-  // Impactos e recomendação continuam utilizando dados mockados.
+  // Os impactos continuam utilizando dados mockados.
   const analise = getAnalise(registro.documento);
 
   const referencias = getReferenciasPorOcorrencia(
@@ -301,17 +311,17 @@ export default function AnaliseRegistro() {
           {/* Recomendação */}
           <PageSection
             title="Recomendação para análise"
-            description="Orientação para o profissional. Não constitui decisão automática."
+            description="Orientação gerada por IA para apoiar a análise profissional. Não constitui decisão automática."
           >
             <div className={styles.recommendationCard}>
-              <p>{analise.recomendacao}</p>
+              <p>{recomendacaoIA}</p>
             </div>
           </PageSection>
 
           {/* Decisão */}
           <PageSection
             title="Decisão do profissional"
-            description="O sistema identifica. A IA explica. A legislação fornece o contexto. O profissional decide."
+            description="O sistema identifica. A IA explica e orienta a análise. A legislação fornece o contexto. O profissional decide."
           >
             <DecisionBox />
           </PageSection>
@@ -320,4 +330,3 @@ export default function AnaliseRegistro() {
     </div>
   );
 }
-
