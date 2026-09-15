@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, SearchX } from "lucide-react";
+import { ArrowLeft, SearchX, RefreshCw, AlertCircle } from "lucide-react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Header from "../../components/Header/Header";
@@ -43,11 +43,19 @@ export default function AnaliseRegistro() {
 
   const [registro, setRegistro] = useState(null);
   const [validacoes, setValidacoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // IA — carga inicial
+  const [loadingIA, setLoadingIA] = useState(false);
+
+  // IA — estados independentes por seção
   const [explicacaoIA, setExplicacaoIA] = useState("");
   const [recomendacaoIA, setRecomendacaoIA] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadingIA, setLoadingIA] = useState(false);
-  const [error, setError] = useState(null);
+  const [loadingExplicacao, setLoadingExplicacao] = useState(false);
+  const [loadingRecomendacao, setLoadingRecomendacao] = useState(false);
+  const [errorExplicacao, setErrorExplicacao] = useState(null);
+  const [errorRecomendacao, setErrorRecomendacao] = useState(null);
 
   useEffect(() => {
     async function carregarRegistro() {
@@ -102,6 +110,45 @@ export default function AnaliseRegistro() {
 
     carregarRegistro();
   }, [id]);
+
+  /**
+   * Regenera individualmente a explicação OU a recomendação.
+   *
+   * @param {"explicacao"|"recomendacao"} campo
+   */
+  async function regenerarCampoIA(campo) {
+    const setLoading =
+      campo === "explicacao" ? setLoadingExplicacao : setLoadingRecomendacao;
+    const setError =
+      campo === "explicacao" ? setErrorExplicacao : setErrorRecomendacao;
+    const setValor =
+      campo === "explicacao" ? setExplicacaoIA : setRecomendacaoIA;
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      const resultado = await buscarExplicacaoIA(id, { apenas: campo });
+
+      // Backend pode devolver ambos os campos — usamos apenas o solicitado.
+      // Se o campo vier vazio, mantemos o valor anterior (não sobrescreve).
+      const novoValor = resultado?.[campo];
+
+      if (typeof novoValor === "string" && novoValor.trim().length > 0) {
+        setValor(novoValor);
+      }
+      // Se vier vazio, o texto anterior permanece intacto.
+    } catch (err) {
+      console.error(`Erro ao gerar nova ${campo}:`, err);
+      setError(
+        campo === "explicacao"
+          ? "Não foi possível gerar uma nova explicação. A versão anterior foi mantida."
+          : "Não foi possível gerar uma nova recomendação. A versão anterior foi mantida."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -163,10 +210,7 @@ export default function AnaliseRegistro() {
 
   // Os impactos continuam utilizando dados mockados.
   const analise = getAnalise(registro.documento);
-
-  const referencias = getReferenciasPorOcorrencia(
-    registro.ocorrencia
-  );
+  const referencias = getReferenciasPorOcorrencia(registro.ocorrencia);
 
   return (
     <div className={styles.layout}>
@@ -195,35 +239,17 @@ export default function AnaliseRegistro() {
             description="Informações declaradas no documento analisado."
           >
             <div className={styles.infoCard}>
-              <InfoRow label="Documento">
-                {registro.documento}
-              </InfoRow>
-
-              <InfoRow label="Empresa">
-                {registro.empresa}
-              </InfoRow>
-
-              <InfoRow label="Segmento">
-                {registro.segmento}
-              </InfoRow>
-
-              <InfoRow label="Data">
-                {registro.data}
-              </InfoRow>
-
-              <InfoRow label="Valor">
-                {formatBRL(registro.valor)}
-              </InfoRow>
-
+              <InfoRow label="Documento">{registro.documento}</InfoRow>
+              <InfoRow label="Empresa">{registro.empresa}</InfoRow>
+              <InfoRow label="Segmento">{registro.segmento}</InfoRow>
+              <InfoRow label="Data">{registro.data}</InfoRow>
+              <InfoRow label="Valor">{formatBRL(registro.valor)}</InfoRow>
               <InfoRow label="Status">
                 <StatusBadge tone={statusTone(registro.status)}>
                   {registro.status}
                 </StatusBadge>
               </InfoRow>
-
-              <InfoRow label="Ocorrência">
-                {registro.ocorrencia}
-              </InfoRow>
+              <InfoRow label="Ocorrência">{registro.ocorrencia}</InfoRow>
             </div>
           </PageSection>
 
@@ -248,14 +274,14 @@ export default function AnaliseRegistro() {
             </div>
           </PageSection>
 
-          {/* IA */}
+          {/* Explicação com IA */}
           <PageSection
             title="Explicação com IA"
             description="A IA não decide — ela contextualiza."
           >
             <div className={styles.aiCard}>
               <span className={styles.aiTag}>
-                {loadingIA
+                {loadingIA || loadingExplicacao
                   ? "Gerando explicação..."
                   : "Explicação gerada por IA"}
               </span>
@@ -265,6 +291,31 @@ export default function AnaliseRegistro() {
                   ? "Aguarde enquanto o FiscalLens gera uma explicação para as inconsistências identificadas."
                   : explicacaoIA}
               </p>
+
+              {errorExplicacao && !loadingExplicacao && (
+                <div className={styles.aiError}>
+                  <AlertCircle size={13} strokeWidth={1.75} />
+                  <span>{errorExplicacao}</span>
+                </div>
+              )}
+
+              <div className={styles.aiActions}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => regenerarCampoIA("explicacao")}
+                  disabled={loadingExplicacao || loadingIA}
+                >
+                  <RefreshCw
+                    size={13}
+                    strokeWidth={1.75}
+                    className={loadingExplicacao ? styles.spinning : ""}
+                  />
+                  {loadingExplicacao
+                    ? "Gerando..."
+                    : "Gerar nova explicação"}
+                </Button>
+              </div>
             </div>
           </PageSection>
 
@@ -314,7 +365,42 @@ export default function AnaliseRegistro() {
             description="Orientação gerada por IA para apoiar a análise profissional. Não constitui decisão automática."
           >
             <div className={styles.recommendationCard}>
-              <p>{recomendacaoIA}</p>
+              <span className={styles.aiTag}>
+                {loadingIA || loadingRecomendacao
+                  ? "Gerando recomendação..."
+                  : "Recomendação gerada por IA"}
+              </span>
+
+              <p className={styles.recommendationText}>
+                {loadingIA
+                  ? "Aguarde enquanto o FiscalLens gera uma recomendação para este registro."
+                  : recomendacaoIA}
+              </p>
+
+              {errorRecomendacao && !loadingRecomendacao && (
+                <div className={styles.aiError}>
+                  <AlertCircle size={13} strokeWidth={1.75} />
+                  <span>{errorRecomendacao}</span>
+                </div>
+              )}
+
+              <div className={styles.aiActions}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => regenerarCampoIA("recomendacao")}
+                  disabled={loadingRecomendacao || loadingIA}
+                >
+                  <RefreshCw
+                    size={13}
+                    strokeWidth={1.75}
+                    className={loadingRecomendacao ? styles.spinning : ""}
+                  />
+                  {loadingRecomendacao
+                    ? "Gerando..."
+                    : "Gerar nova recomendação"}
+                </Button>
+              </div>
             </div>
           </PageSection>
 
