@@ -22,7 +22,7 @@
 
 ## 📖 Sobre o projeto
 
-O FiscalLens é uma aplicação full stack voltada ao contexto de **consultoria tributária**, desenvolvida como protótipo de portfólio. O sistema analisa registros fiscais, aplica **validações determinísticas** para identificar possíveis inconsistências e utiliza **inteligência artificial** para contextualizar os resultados — sempre deixando a decisão final para o profissional responsável.
+O FiscalLens é uma aplicação full stack voltada ao contexto de **consultoria tributária**, desenvolvida como protótipo de portfólio. O sistema analisa registros fiscais, aplica **validações determinísticas** para identificar possíveis inconsistências e utiliza **inteligência artificial** para contextualizar os resultados sempre deixando a decisão final para o profissional responsável.
 
 O princípio que orienta todas as decisões do produto é:
 
@@ -117,7 +117,7 @@ Este é um protótipo demonstrativo e utiliza a API do Gemini para geração das
 
 Em um cenário de produção, seria necessário considerar limites de uso, monitoramento, custos e estratégias de controle de requisições.
 
-O papel restrito da IA — explicar, contextualizar e recomendar — é uma decisão de design do produto, e não uma limitação técnica.
+O papel restrito da IA — explicar, contextualizar e recomendar é uma decisão de design do produto, e não uma limitação técnica.
 
 ---
 
