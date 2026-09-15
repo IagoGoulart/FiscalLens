@@ -76,10 +76,17 @@ app.get("/api/health/database-info", async (req, res) => {
 
 app.get("/api/health/encoding-db", async (req, res) => {
   try {
-    const result = await pool.query("SHOW client_encoding");
+    const result = await pool.query(`
+      SELECT razao_social
+      FROM empresas
+      WHERE id = 1
+    `);
+
+    const texto = result.rows[0].razao_social;
 
     res.json({
-      client_encoding: result.rows[0].client_encoding
+      texto,
+      bytes: Buffer.from(texto, "utf8").toString("hex")
     });
   } catch (error) {
     console.error(error);
@@ -89,7 +96,6 @@ app.get("/api/health/encoding-db", async (req, res) => {
     });
   }
 });
-
 // Lista todos os registros fiscais
 app.get("/api/registros", async (req, res) => {
   try {
