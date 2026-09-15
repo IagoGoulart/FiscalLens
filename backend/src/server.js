@@ -10,18 +10,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
-app.get("/api/health/encoding2", (req, res) => {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-
-  res.end(JSON.stringify({
-    teste: "Comércio",
-    teste2: "Logística",
-    teste3: "Indústria",
-    teste4: "Serviços",
-    teste5: "Tributário"
-  }));
-});
-
 // Rota de teste da API
 app.get("/api/health", (req, res) => {
   res.json({
@@ -74,28 +62,7 @@ app.get("/api/health/database-info", async (req, res) => {
   }
 });
 
-app.get("/api/health/encoding-db", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT razao_social
-      FROM empresas
-      WHERE id = 1
-    `);
 
-    const texto = result.rows[0].razao_social;
-
-    res.json({
-      texto,
-      encoded: encodeURIComponent(texto)
-    });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      message: "Erro ao verificar encoding"
-    });
-  }
-});
 // Lista todos os registros fiscais
 app.get("/api/registros", async (req, res) => {
   try {
