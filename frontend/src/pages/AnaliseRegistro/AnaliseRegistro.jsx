@@ -218,7 +218,7 @@ export default function AnaliseRegistro() {
   }
 
   // Os impactos continuam utilizando dados mockados.
-  const analise = getAnalise(registro.documento);
+  const analise = getAnalise(registro.id);
   const referencias = getReferenciasPorOcorrencia(
     registro.ocorrencia
   );

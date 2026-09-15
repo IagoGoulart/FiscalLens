@@ -250,20 +250,9 @@ app.post("/api/registros/:id/explicacao-ia", async (req, res) => {
 
     const resultadoIA = await gerarExplicacaoIA(
       registro,
-      resultadoValidacao
+      resultadoValidacao,
+      apenas
     );
-
-    if (apenas === "explicacao") {
-      return res.json({
-        explicacao: resultadoIA.explicacao,
-      });
-    }
-
-    if (apenas === "recomendacao") {
-      return res.json({
-        recomendacao: resultadoIA.recomendacao,
-      });
-    }
 
     res.json(resultadoIA);
 

@@ -28,7 +28,7 @@ export default function BarChart({ data }) {
       </div>
 
       <div className={styles.caption}>
-        Base: <strong>250</strong> registros analisados no período
+        Base: <strong>24</strong> registros analisados no período
       </div>
     </div>
   );
