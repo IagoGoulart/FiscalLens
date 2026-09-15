@@ -74,6 +74,22 @@ app.get("/api/health/database-info", async (req, res) => {
   }
 });
 
+app.get("/api/health/encoding-db", async (req, res) => {
+  try {
+    const result = await pool.query("SHOW client_encoding");
+
+    res.json({
+      client_encoding: result.rows[0].client_encoding
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Erro ao verificar encoding"
+    });
+  }
+});
+
 // Lista todos os registros fiscais
 app.get("/api/registros", async (req, res) => {
   try {
