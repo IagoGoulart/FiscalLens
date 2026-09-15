@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-
 const cors = require("cors");
 const express = require("express");
 const pool = require("./config/database");
@@ -11,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 
 // Rota de teste da API
 app.get("/api/health", (req, res) => {
@@ -54,6 +54,7 @@ app.get("/api/health/database-info", async (req, res) => {
     `);
 
     res.json(result.rows[0]);
+
   } catch (error) {
     console.error(error);
 
@@ -63,7 +64,6 @@ app.get("/api/health/database-info", async (req, res) => {
     });
   }
 });
-
 
 // Lista todos os registros fiscais
 app.get("/api/registros", async (req, res) => {
@@ -97,7 +97,7 @@ app.get("/api/registros", async (req, res) => {
       registros.push({
         ...registro,
         status: resultadoFinal.classificacao,
-        ocorrencia: resultadoFinal.ocorrencia
+        ocorrencia: resultadoFinal.ocorrencia,
       });
     }
 
@@ -157,6 +157,7 @@ app.get("/api/registros/:id", async (req, res) => {
   }
 });
 
+// Busca as validações de um registro específico
 app.get("/api/registros/:id/validacao", async (req, res) => {
   try {
     const { id } = req.params;
@@ -183,7 +184,11 @@ app.get("/api/registros/:id/validacao", async (req, res) => {
     }
 
     const registro = result.rows[0];
-    const resultadoFinal = await validarRegistro(pool, registro);
+
+    const resultadoFinal = await validarRegistro(
+      pool,
+      registro
+    );
 
     res.json({
       registro: {
@@ -204,10 +209,12 @@ app.get("/api/registros/:id/validacao", async (req, res) => {
     });
   }
 });
-// Gera uma explicação em linguagem natural para as inconsistências identificadas pelas regras do sistema
+
+// Gera explicação e recomendação com IA
 app.post("/api/registros/:id/explicacao-ia", async (req, res) => {
   try {
     const { id } = req.params;
+    const { apenas } = req.body;
 
     const result = await pool.query(
       `
@@ -241,14 +248,24 @@ app.post("/api/registros/:id/explicacao-ia", async (req, res) => {
       registro
     );
 
-    const explicacao = await gerarExplicacaoIA(
+    const resultadoIA = await gerarExplicacaoIA(
       registro,
       resultadoValidacao
     );
 
-    res.json({
-      explicacao,
-    });
+    if (apenas === "explicacao") {
+      return res.json({
+        explicacao: resultadoIA.explicacao,
+      });
+    }
+
+    if (apenas === "recomendacao") {
+      return res.json({
+        recomendacao: resultadoIA.recomendacao,
+      });
+    }
+
+    res.json(resultadoIA);
 
   } catch (error) {
     console.error(error);

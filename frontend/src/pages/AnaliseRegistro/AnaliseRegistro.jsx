@@ -52,8 +52,10 @@ export default function AnaliseRegistro() {
   // IA — estados independentes por seção
   const [explicacaoIA, setExplicacaoIA] = useState("");
   const [recomendacaoIA, setRecomendacaoIA] = useState("");
+
   const [loadingExplicacao, setLoadingExplicacao] = useState(false);
   const [loadingRecomendacao, setLoadingRecomendacao] = useState(false);
+
   const [errorExplicacao, setErrorExplicacao] = useState(null);
   const [errorRecomendacao, setErrorRecomendacao] = useState(null);
 
@@ -111,35 +113,42 @@ export default function AnaliseRegistro() {
     carregarRegistro();
   }, [id]);
 
-  /**
-   * Regenera individualmente a explicação OU a recomendação.
-   *
-   * @param {"explicacao"|"recomendacao"} campo
-   */
+  // Regenera somente a explicação ou somente a recomendação
   async function regenerarCampoIA(campo) {
     const setLoading =
-      campo === "explicacao" ? setLoadingExplicacao : setLoadingRecomendacao;
+      campo === "explicacao"
+        ? setLoadingExplicacao
+        : setLoadingRecomendacao;
+
     const setError =
-      campo === "explicacao" ? setErrorExplicacao : setErrorRecomendacao;
+      campo === "explicacao"
+        ? setErrorExplicacao
+        : setErrorRecomendacao;
+
     const setValor =
-      campo === "explicacao" ? setExplicacaoIA : setRecomendacaoIA;
+      campo === "explicacao"
+        ? setExplicacaoIA
+        : setRecomendacaoIA;
 
     setError(null);
     setLoading(true);
 
     try {
-      const resultado = await buscarExplicacaoIA(id, { apenas: campo });
+      const resultado = await buscarExplicacaoIA(id, {
+        apenas: campo,
+      });
 
-      // Backend pode devolver ambos os campos — usamos apenas o solicitado.
-      // Se o campo vier vazio, mantemos o valor anterior (não sobrescreve).
       const novoValor = resultado?.[campo];
 
-      if (typeof novoValor === "string" && novoValor.trim().length > 0) {
+      if (
+        typeof novoValor === "string" &&
+        novoValor.trim().length > 0
+      ) {
         setValor(novoValor);
       }
-      // Se vier vazio, o texto anterior permanece intacto.
     } catch (err) {
       console.error(`Erro ao gerar nova ${campo}:`, err);
+
       setError(
         campo === "explicacao"
           ? "Não foi possível gerar uma nova explicação. A versão anterior foi mantida."
@@ -210,7 +219,9 @@ export default function AnaliseRegistro() {
 
   // Os impactos continuam utilizando dados mockados.
   const analise = getAnalise(registro.documento);
-  const referencias = getReferenciasPorOcorrencia(registro.ocorrencia);
+  const referencias = getReferenciasPorOcorrencia(
+    registro.ocorrencia
+  );
 
   return (
     <div className={styles.layout}>
@@ -239,17 +250,35 @@ export default function AnaliseRegistro() {
             description="Informações declaradas no documento analisado."
           >
             <div className={styles.infoCard}>
-              <InfoRow label="Documento">{registro.documento}</InfoRow>
-              <InfoRow label="Empresa">{registro.empresa}</InfoRow>
-              <InfoRow label="Segmento">{registro.segmento}</InfoRow>
-              <InfoRow label="Data">{registro.data}</InfoRow>
-              <InfoRow label="Valor">{formatBRL(registro.valor)}</InfoRow>
+              <InfoRow label="Documento">
+                {registro.documento}
+              </InfoRow>
+
+              <InfoRow label="Empresa">
+                {registro.empresa}
+              </InfoRow>
+
+              <InfoRow label="Segmento">
+                {registro.segmento}
+              </InfoRow>
+
+              <InfoRow label="Data">
+                {registro.data}
+              </InfoRow>
+
+              <InfoRow label="Valor">
+                {formatBRL(registro.valor)}
+              </InfoRow>
+
               <InfoRow label="Status">
                 <StatusBadge tone={statusTone(registro.status)}>
                   {registro.status}
                 </StatusBadge>
               </InfoRow>
-              <InfoRow label="Ocorrência">{registro.ocorrencia}</InfoRow>
+
+              <InfoRow label="Ocorrência">
+                {registro.ocorrencia}
+              </InfoRow>
             </div>
           </PageSection>
 
@@ -294,7 +323,10 @@ export default function AnaliseRegistro() {
 
               {errorExplicacao && !loadingExplicacao && (
                 <div className={styles.aiError}>
-                  <AlertCircle size={13} strokeWidth={1.75} />
+                  <AlertCircle
+                    size={13}
+                    strokeWidth={1.75}
+                  />
                   <span>{errorExplicacao}</span>
                 </div>
               )}
@@ -303,14 +335,23 @@ export default function AnaliseRegistro() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => regenerarCampoIA("explicacao")}
-                  disabled={loadingExplicacao || loadingIA}
+                  onClick={() =>
+                    regenerarCampoIA("explicacao")
+                  }
+                  disabled={
+                    loadingExplicacao || loadingIA
+                  }
                 >
                   <RefreshCw
                     size={13}
                     strokeWidth={1.75}
-                    className={loadingExplicacao ? styles.spinning : ""}
+                    className={
+                      loadingExplicacao
+                        ? styles.spinning
+                        : ""
+                    }
                   />
+
                   {loadingExplicacao
                     ? "Gerando..."
                     : "Gerar nova explicação"}
@@ -377,25 +418,38 @@ export default function AnaliseRegistro() {
                   : recomendacaoIA}
               </p>
 
-              {errorRecomendacao && !loadingRecomendacao && (
-                <div className={styles.aiError}>
-                  <AlertCircle size={13} strokeWidth={1.75} />
-                  <span>{errorRecomendacao}</span>
-                </div>
-              )}
+              {errorRecomendacao &&
+                !loadingRecomendacao && (
+                  <div className={styles.aiError}>
+                    <AlertCircle
+                      size={13}
+                      strokeWidth={1.75}
+                    />
+                    <span>{errorRecomendacao}</span>
+                  </div>
+                )}
 
               <div className={styles.aiActions}>
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => regenerarCampoIA("recomendacao")}
-                  disabled={loadingRecomendacao || loadingIA}
+                  onClick={() =>
+                    regenerarCampoIA("recomendacao")
+                  }
+                  disabled={
+                    loadingRecomendacao || loadingIA
+                  }
                 >
                   <RefreshCw
                     size={13}
                     strokeWidth={1.75}
-                    className={loadingRecomendacao ? styles.spinning : ""}
+                    className={
+                      loadingRecomendacao
+                        ? styles.spinning
+                        : ""
+                    }
                   />
+
                   {loadingRecomendacao
                     ? "Gerando..."
                     : "Gerar nova recomendação"}
