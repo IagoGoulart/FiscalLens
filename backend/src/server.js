@@ -95,6 +95,7 @@ app.get("/api/registros", async (req, res) => {
       ORDER BY registros_fiscais.id;
     `);
 
+    console.log("TESTE REGISTROS");
     console.log(result.rows[0]);
 
     const registros = [];
