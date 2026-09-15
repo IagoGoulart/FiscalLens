@@ -76,12 +76,17 @@ app.get("/api/health/database-info", async (req, res) => {
 
 app.get("/api/health/encoding-db", async (req, res) => {
   try {
-    const server = await pool.query("SHOW server_encoding");
-    const client = await pool.query("SHOW client_encoding");
+    const result = await pool.query(`
+      SELECT razao_social
+      FROM empresas
+      WHERE id = 1
+    `);
+
+    const texto = result.rows[0].razao_social;
 
     res.json({
-      server_encoding: server.rows[0].server_encoding,
-      client_encoding: client.rows[0].client_encoding
+      texto,
+      encoded: encodeURIComponent(texto)
     });
   } catch (error) {
     console.error(error);
