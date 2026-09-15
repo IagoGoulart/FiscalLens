@@ -214,7 +214,7 @@ app.get("/api/registros/:id/validacao", async (req, res) => {
 app.post("/api/registros/:id/explicacao-ia", async (req, res) => {
   try {
     const { id } = req.params;
-    const { apenas } = req.body;
+    const { apenas } = req.body || {};
 
     const result = await pool.query(
       `

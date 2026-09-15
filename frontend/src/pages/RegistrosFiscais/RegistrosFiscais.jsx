@@ -171,9 +171,9 @@ export default function RegistrosFiscais() {
         <main className={styles.content}>
           {/* Resumo discreto */}
           <div className={styles.summary}>
-            <span className={styles.summaryStrong}>250 registros analisados</span>
+            <span className={styles.summaryStrong}>24 registros analisados</span>
             <span className={styles.summaryDot}>·</span>
-            <span>Janeiro de 2026 · Empresa Alpha</span>
+            <span>Janeiro de 2026 · Todas as empresas</span>
           </div>
 
           {/* Filtros */}
