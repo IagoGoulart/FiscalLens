@@ -94,22 +94,22 @@ app.get("/api/registros", async (req, res) => {
         ON registros_fiscais.empresa_id = empresas.id
       ORDER BY registros_fiscais.id;
     `);
+
+    console.log(result.rows[0]);
+
     const registros = [];
 
-
     for (const registro of result.rows) {
-        const resultadoFinal = await validarRegistro(pool, registro)
-        
-        registros.push({
-            ...registro,
-            status: resultadoFinal.classificacao,
-            ocorrencia: resultadoFinal.ocorrencia
-        })
+      const resultadoFinal = await validarRegistro(pool, registro);
+
+      registros.push({
+        ...registro,
+        status: resultadoFinal.classificacao,
+        ocorrencia: resultadoFinal.ocorrencia
+      });
     }
 
     res.json(registros);
-
-
 
   } catch (error) {
     console.error(error);
@@ -154,6 +154,7 @@ app.get("/api/registros/:id", async (req, res) => {
     }
 
     res.json(result.rows[0]);
+
   } catch (error) {
     console.error(error);
 
@@ -168,19 +169,19 @@ app.get("/api/registros/:id/validacao", async (req, res) => {
   try {
     const { id } = req.params;
 
-const result = await pool.query(
-  `
-    SELECT
-      id,
-      numero_documento,
-      data_emissao,
-      valor_total,
-      chave_acesso
-    FROM registros_fiscais
-    WHERE id = $1;
-  `,
-  [id]
-);
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          numero_documento,
+          data_emissao,
+          valor_total,
+          chave_acesso
+        FROM registros_fiscais
+        WHERE id = $1;
+      `,
+      [id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -192,7 +193,6 @@ const result = await pool.query(
     const registro = result.rows[0];
     const resultadoFinal = await validarRegistro(pool, registro);
 
-
     res.json({
       registro: {
         id: registro.id,
@@ -202,7 +202,7 @@ const result = await pool.query(
       validacoes: resultadoFinal.validacoes,
       ocorrencia: resultadoFinal.ocorrencia,
     });
-    
+
   } catch (error) {
     console.error(error);
 
