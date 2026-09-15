@@ -1,36 +1,130 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SearchX } from "lucide-react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import Header from "../../components/Header/Header";
 import PageSection from "../../components/PageSection/PageSection";
+import InfoRow from "../../components/InfoRow/InfoRow";
 import DataTable from "../../components/DataTable/DataTable";
 import StatusBadge from "../../components/StatusBadge/StatusBadge";
 import Button from "../../components/Button/Button";
-import ImpactCard from "../../components/ImpactCard/ImpactCard";
-import InfoRow from "../../components/InfoRow/InfoRow";
+import EmptyState from "../../components/EmptyState/EmptyState";
 
-import { relatorioMock, referenciasConsultadas } from "../../data/mockRelatorio";
-import { registrosMock } from "../../data/mockRegistros";
+import { buscarRegistros } from "../../services/registrosService";
 import styles from "./Relatorios.module.css";
+
+const PERIODO = "Janeiro de 2026";
+
+// Ordem fixa dos principais achados, conforme definido no produto.
+// A prioridade é fixa por tipo — não é inferida do volume.
+const TIPOS_OCORRENCIA = [
+  { tipo: "Total inconsistente",       prioridade: "Alta"  },
+  { tipo: "Data fora do período",      prioridade: "Média" },
+  { tipo: "Documento duplicado",       prioridade: "Alta"  },
+  { tipo: "Campo obrigatório ausente", prioridade: "Média" },
+];
 
 const prioridadeTone = (p) =>
   p === "Alta" ? "danger" : p === "Média" ? "warning" : "success";
 
 export default function Relatorios() {
   const navigate = useNavigate();
-  const r = relatorioMock;
 
-  const registrosPrioritarios = registrosMock
-    .filter((reg) => reg.status === "Prioridade alta")
-    .slice(0, 6);
+  const [registros, setRegistros] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const dados = await buscarRegistros();
+        setRegistros(dados);
+      } catch (err) {
+        console.error(err);
+        setError("Não foi possível carregar os dados do relatório.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    carregar();
+  }, []);
+
+  // ---- Derivados ----
+  const resumo = useMemo(() => {
+    const total = registros.length;
+    const regulares = registros.filter((r) => r.status === "Regular").length;
+    const atencao = registros.filter((r) => r.status === "Atenção").length;
+    const prioridadeAlta = registros.filter(
+      (r) => r.status === "Prioridade alta"
+    ).length;
+    return { total, regulares, atencao, prioridadeAlta };
+  }, [registros]);
+
+  // Conta cada ocorrência individualmente, mesmo quando um registro
+  // possui mais de uma inconsistência (ex.: "Data fora do período + Documento duplicado").
+  const principaisAchados = useMemo(() => {
+    return TIPOS_OCORRENCIA.map(({ tipo, prioridade }) => {
+      const ocorrencias = registros.filter((registro) =>
+        registro.ocorrencia?.includes(tipo)
+      ).length;
+
+      return {
+        id: tipo,
+        tipo,
+        ocorrencias,
+        prioridade,
+      };
+    }).filter((linha) => linha.ocorrencias > 0);
+  }, [registros]);
+
+  const registrosPrioritarios = useMemo(
+    () => registros.filter((r) => r.status === "Prioridade alta"),
+    [registros]
+  );
+
+  const resumoExecutivo = useMemo(() => {
+    if (resumo.total === 0) return "";
+    const { total, regulares, atencao, prioridadeAlta } = resumo;
+    const comPendencia = atencao + prioridadeAlta;
+
+    const achadosTexto = principaisAchados
+      .map((a) => `${a.tipo.toLowerCase()} (${a.ocorrencias})`)
+      .join(", ");
+
+    return (
+      `Foram analisados ${total} registros fiscais no período de ${PERIODO.toLowerCase()}. ` +
+      `${regulares} foram classificados como regulares. ` +
+      `${comPendencia} registros apresentaram pontos que requerem revisão, ` +
+      `sendo ${prioridadeAlta} classificados como prioridade alta. ` +
+      (achadosTexto
+        ? `As principais ocorrências identificadas foram: ${achadosTexto}.`
+        : "Nenhuma ocorrência foi identificada no período.")
+    );
+  }, [resumo, principaisAchados]);
+
+  const conclusao = useMemo(() => {
+    if (resumo.prioridadeAlta === 0) {
+      return (
+        "Nenhum registro foi classificado como prioridade alta no período analisado. " +
+        "A análise profissional permanece necessária para validação final."
+      );
+    }
+    return (
+      `Os ${resumo.prioridadeAlta} registros classificados como prioridade alta devem ser revisados ` +
+      `pelo responsável antes de qualquer decisão. As inconsistências identificadas pelo FiscalLens ` +
+      `servem como pontos de atenção para a análise profissional.`
+    );
+  }, [resumo]);
+
+  // ---- Colunas ----
   const colunasAchados = [
     { key: "tipo", header: "Tipo de ocorrência" },
     { key: "ocorrencias", header: "Ocorrências", width: 120, align: "right" },
     { key: "prioridade", header: "Prioridade", width: 130 },
   ];
 
-  const colunasRegistros = [
+  const colunasPrioritarios = [
     { key: "documento", header: "Documento", width: 110 },
     { key: "empresa", header: "Empresa" },
     { key: "segmento", header: "Segmento", width: 110 },
@@ -39,6 +133,42 @@ export default function Relatorios() {
     { key: "acao", header: "", width: 110, align: "right" },
   ];
 
+  // ---- Estados de carregamento / erro ----
+  if (loading) {
+    return (
+      <div className={styles.layout}>
+        <Sidebar />
+        <div className={styles.main}>
+          <Header title="Relatórios" subtitle={`Período analisado: ${PERIODO}`} />
+          <main className={styles.content}>
+            <EmptyState
+              title="Carregando relatório..."
+              description="Aguarde enquanto os dados consolidados são carregados."
+            />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.layout}>
+        <Sidebar />
+        <div className={styles.main}>
+          <Header title="Relatórios" subtitle={`Período analisado: ${PERIODO}`} />
+          <main className={styles.content}>
+            <EmptyState
+              icon={SearchX}
+              title="Erro ao carregar"
+              description={error}
+            />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.layout}>
       <Sidebar />
@@ -46,22 +176,21 @@ export default function Relatorios() {
       <div className={styles.main}>
         <Header
           title="Relatórios"
-          subtitle="Consolidação dos principais resultados e pontos de atenção identificados na análise."
+          subtitle={`Consolidação dos resultados do período analisado — ${PERIODO}.`}
         />
 
         <main className={styles.content}>
           {/* Resumo do relatório */}
           <PageSection
             title="Resumo do relatório"
-            description="Contexto da análise consolidada."
+            description="Consolidação dos registros processados no período."
           >
             <div className={styles.summaryCard}>
-              <InfoRow label="Empresa">{r.empresa}</InfoRow>
-              <InfoRow label="Segmento">{r.segmento}</InfoRow>
-              <InfoRow label="Período">{r.periodo}</InfoRow>
-              <InfoRow label="Registros analisados">{r.registrosAnalisados}</InfoRow>
-              <InfoRow label="Registros com atenção">{r.registrosAtencao}</InfoRow>
-              <InfoRow label="Prioridade alta">{r.registrosPrioridadeAlta}</InfoRow>
+              <InfoRow label="Período analisado">{PERIODO}</InfoRow>
+              <InfoRow label="Registros analisados">{resumo.total}</InfoRow>
+              <InfoRow label="Registros regulares">{resumo.regulares}</InfoRow>
+              <InfoRow label="Registros com atenção">{resumo.atencao}</InfoRow>
+              <InfoRow label="Prioridade alta">{resumo.prioridadeAlta}</InfoRow>
             </div>
           </PageSection>
 
@@ -71,18 +200,18 @@ export default function Relatorios() {
             description="Síntese dos principais resultados identificados no período."
           >
             <div className={styles.execCard}>
-              <p className={styles.execText}>{r.resumoExecutivo}</p>
+              <p className={styles.execText}>{resumoExecutivo}</p>
             </div>
           </PageSection>
 
           {/* Principais achados */}
           <PageSection
             title="Principais achados"
-            description="Tipos de ocorrência com maior incidência no período analisado."
+            description="Contagem por tipo de ocorrência. Um registro pode apresentar mais de uma inconsistência."
           >
             <DataTable
               columns={colunasAchados}
-              rows={r.principaisAchados.map((a, i) => ({ id: `a-${i}`, ...a }))}
+              rows={principaisAchados}
               renderCell={(row, col) => {
                 if (col.key === "prioridade") {
                   return (
@@ -96,60 +225,13 @@ export default function Relatorios() {
             />
           </PageSection>
 
-          {/* Impactos */}
-          <PageSection
-            title="Impactos potenciais"
-            description="Distribuição demonstrativa dos possíveis impactos identificados. Não representam conclusões tributárias."
-          >
-            <div className={styles.impactsGrid}>
-              {r.impactosPotenciais.map((i) => (
-                <ImpactCard
-                  key={i.categoria}
-                  categoria={`${i.categoria} — ${i.registros} registros`}
-                />
-              ))}
-            </div>
-          </PageSection>
-
-          {/* Recomendações */}
-          <PageSection
-            title="Recomendações"
-            description="Orientações para revisão e próximos passos. Não constituem decisão automática."
-          >
-            <ol className={styles.recommendationList}>
-              {r.recomendacoes.map((rec, i) => (
-                <li key={i} className={styles.recommendationItem}>
-                  <span className={styles.recommendationNumber}>{i + 1}</span>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ol>
-          </PageSection>
-
-          {/* Referências consultadas */}
-          <PageSection
-            title="Referências consultadas"
-            description="Fontes oficiais utilizadas como contexto de apoio à análise. Não constituem validação das regras do protótipo."
-          >
-            <div className={styles.referencesSummary}>
-              {referenciasConsultadas.map((ref) => (
-                <div key={ref.orgao} className={styles.referenceItem}>
-                  <span className={styles.referenceOrgao}>{ref.orgao}</span>
-                  <span className={styles.referenceQtd}>
-                    {ref.quantidade} {ref.quantidade === 1 ? "fonte" : "fontes"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </PageSection>
-
           {/* Registros prioritários */}
           <PageSection
             title="Registros prioritários"
             description="Registros classificados como prioridade alta que devem ser revisados pelo responsável."
           >
             <DataTable
-              columns={colunasRegistros}
+              columns={colunasPrioritarios}
               rows={registrosPrioritarios}
               renderCell={(row, col) => {
                 if (col.key === "prioridade") {
@@ -174,20 +256,13 @@ export default function Relatorios() {
             />
           </PageSection>
 
-          {/* Preparação para apresentação */}
+          {/* Conclusão da análise */}
           <PageSection
-            title={r.preparacaoApresentacao.titulo}
-            description={r.preparacaoApresentacao.subtitulo}
+            title="Conclusão da análise"
+            description="Consolidação do período. Não constitui recomendação tributária."
           >
-            <div className={styles.presentationCard}>
-              <ul className={styles.presentationList}>
-                {r.preparacaoApresentacao.topicos.map((t, i) => (
-                  <li key={i}>{t}</li>
-                ))}
-              </ul>
-              <p className={styles.presentationObs}>
-                {r.preparacaoApresentacao.observacao}
-              </p>
+            <div className={styles.conclusionCard}>
+              <p className={styles.conclusionText}>{conclusao}</p>
             </div>
           </PageSection>
         </main>

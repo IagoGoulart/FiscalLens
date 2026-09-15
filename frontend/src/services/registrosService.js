@@ -1,12 +1,15 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export async function buscarRegistros() {
   const response = await fetch(`${API_URL}/api/registros`);
+
   if (!response.ok) {
     throw new Error("Erro ao buscar registros fiscais");
   }
+
   const dados = await response.json();
+
   return dados.map((registro) => ({
     id: registro.id,
     documento: registro.numero_documento,
@@ -19,12 +22,16 @@ export async function buscarRegistros() {
     areaImpacto: registro.area_impacto,
   }));
 }
+
 export async function buscarRegistroPorId(id) {
   const response = await fetch(`${API_URL}/api/registros/${id}`);
+
   if (!response.ok) {
     throw new Error("Erro ao buscar registro fiscal");
   }
+
   const registro = await response.json();
+
   return {
     id: registro.id,
     documento: registro.numero_documento,
@@ -39,7 +46,9 @@ export async function buscarRegistroPorId(id) {
 }
 
 export async function buscarValidacoesPorRegistro(id) {
-  const response = await fetch(`${API_URL}/api/registros/${id}/validacao`);
+  const response = await fetch(
+    `${API_URL}/api/registros/${id}/validacao`
+  );
 
   if (!response.ok) {
     throw new Error("Erro ao buscar validações do registro");
@@ -47,3 +56,19 @@ export async function buscarValidacoesPorRegistro(id) {
 
   return response.json();
 }
+
+export async function buscarExplicacaoIA(id) {
+  const response = await fetch(
+    `${API_URL}/api/registros/${id}/explicacao-ia`,
+    {
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Erro ao gerar explicação com IA");
+  }
+
+  return response.json();
+}
+

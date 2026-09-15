@@ -17,7 +17,9 @@ import EmptyState from "../../components/EmptyState/EmptyState";
 import {
   buscarRegistroPorId,
   buscarValidacoesPorRegistro,
+  buscarExplicacaoIA,
 } from "../../services/registrosService";
+
 import { getAnalise } from "../../data/mockAnalises";
 import { getReferenciasPorOcorrencia } from "../../data/mockReferencias";
 import styles from "./AnaliseRegistro.module.css";
@@ -41,7 +43,9 @@ export default function AnaliseRegistro() {
 
   const [registro, setRegistro] = useState(null);
   const [validacoes, setValidacoes] = useState([]);
+  const [explicacaoIA, setExplicacaoIA] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingIA, setLoadingIA] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -52,9 +56,32 @@ export default function AnaliseRegistro() {
 
         setRegistro({
           ...dados,
-          status: resultadoValidacao.status
+          status: resultadoValidacao.status,
         });
+
         setValidacoes(resultadoValidacao.validacoes);
+
+        if (resultadoValidacao.status !== "Regular") {
+          setLoadingIA(true);
+
+          try {
+            const resultadoIA = await buscarExplicacaoIA(id);
+
+            setExplicacaoIA(resultadoIA.explicacao);
+          } catch (err) {
+            console.error("Erro ao gerar explicação com IA:", err);
+
+            setExplicacaoIA(
+              "Não foi possível gerar a explicação com IA neste momento. A análise das inconsistências identificadas pelo sistema permanece disponível."
+            );
+          } finally {
+            setLoadingIA(false);
+          }
+        } else {
+          setExplicacaoIA(
+            "Nenhuma inconsistência foi identificada pelas regras deste protótipo. A análise profissional permanece necessária para a validação final."
+          );
+        }
       } catch (err) {
         console.error(err);
         setError("Não foi possível carregar o registro.");
@@ -124,10 +151,12 @@ export default function AnaliseRegistro() {
     );
   }
 
-  // A explicação, os impactos e a recomendação ainda utilizam dados mockados.
+  // Impactos e recomendação continuam utilizando dados mockados.
   const analise = getAnalise(registro.documento);
 
-  const referencias = getReferenciasPorOcorrencia(registro.ocorrencia);
+  const referencias = getReferenciasPorOcorrencia(
+    registro.ocorrencia
+  );
 
   return (
     <div className={styles.layout}>
@@ -156,13 +185,21 @@ export default function AnaliseRegistro() {
             description="Informações declaradas no documento analisado."
           >
             <div className={styles.infoCard}>
-              <InfoRow label="Documento">{registro.documento}</InfoRow>
+              <InfoRow label="Documento">
+                {registro.documento}
+              </InfoRow>
 
-              <InfoRow label="Empresa">{registro.empresa}</InfoRow>
+              <InfoRow label="Empresa">
+                {registro.empresa}
+              </InfoRow>
 
-              <InfoRow label="Segmento">{registro.segmento}</InfoRow>
+              <InfoRow label="Segmento">
+                {registro.segmento}
+              </InfoRow>
 
-              <InfoRow label="Data">{registro.data}</InfoRow>
+              <InfoRow label="Data">
+                {registro.data}
+              </InfoRow>
 
               <InfoRow label="Valor">
                 {formatBRL(registro.valor)}
@@ -193,9 +230,9 @@ export default function AnaliseRegistro() {
                   resultado={
                     validacao.status === "aprovado"
                       ? "regular"
-                      :"inconsistente"
+                      : "inconsistente"
                   }
-                  detalhe={validacao.detalhe}
+                  detalhe={validacao.mensagem}
                 />
               ))}
             </div>
@@ -208,11 +245,15 @@ export default function AnaliseRegistro() {
           >
             <div className={styles.aiCard}>
               <span className={styles.aiTag}>
-                Conteúdo demonstrativo
+                {loadingIA
+                  ? "Gerando explicação..."
+                  : "Explicação gerada por IA"}
               </span>
 
               <p className={styles.aiText}>
-                {analise.explicacaoIA}
+                {loadingIA
+                  ? "Aguarde enquanto o FiscalLens gera uma explicação para as inconsistências identificadas."
+                  : explicacaoIA}
               </p>
             </div>
           </PageSection>
@@ -279,3 +320,4 @@ export default function AnaliseRegistro() {
     </div>
   );
 }
+
